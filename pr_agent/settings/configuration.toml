@@ -1,8 +1,8 @@
 [config]
-model="gpt-4"
-fallback_models=["gpt-3.5-turbo-16k"]
-git_provider="github"
-publish_output=true
+model="bito_advanced"
+fallback_models=["bito_basic"]
+git_provider="gitlab"
+publish_output=false
 publish_output_progress=true
 verbosity_level=0 # 0,1,2
 use_extra_bad_extensions=false
@@ -10,7 +10,6 @@ use_repo_settings_file=true
 ai_timeout=180
 max_description_tokens = 500
 max_commits_tokens = 500
-patch_extra_lines = 3
 secret_provider="google_cloud_storage"
 cli_mode=false
 
@@ -27,14 +26,14 @@ automatic_review=true
 extra_instructions = ""
 
 [pr_description] # /describe #
-publish_labels=true
+publish_labels=false
 publish_description_as_comment=false
 add_original_user_description=false
 keep_original_user_title=false
 extra_instructions = ""
 # markers
 use_description_markers=false
-include_generated_by_header=true
+include_generated_by_header=false
 
 [pr_questions] # /ask #
 
@@ -47,10 +46,6 @@ num_code_suggestions_per_chunk=8
 rank_extended_suggestions = true
 max_number_of_calls = 5
 final_clip_factor = 0.9
-
-[pr_add_docs] # /add_docs #
-extra_instructions = ""
-docs_style = "Sphinx Style" # "Google Style with Args, Returns, Attributes...etc", "Numpy Style", "Sphinx Style", "PEP257", "reStructuredText"
 
 [pr_update_changelog] # /update_changelog #
 push_changelog_changes=false
