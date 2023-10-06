@@ -10,12 +10,9 @@ jobs:
       contents: write
     name: Run pr agent on every pull request, respond to user comments
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
       - name: PR Agent action step
         id: pragent
         uses: rkj6124/pr-agent@main
         env:
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           BITO_KEY: ${{ secrets.BITO_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
