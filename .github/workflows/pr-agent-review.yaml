@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: PR Agent action step
         id: pragent
-        uses: ./
+        uses: rkj6124/pr-agent@main
         env:
           BITO_KEY: ${{ secrets.BITO_KEY }}
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
