@@ -16,6 +16,7 @@ async def run_action():
     GITHUB_EVENT_PATH = os.environ.get('GITHUB_EVENT_PATH')
     OPENAI_KEY = os.environ.get('OPENAI_KEY') or os.environ.get('OPENAI.KEY')
     OPENAI_ORG = os.environ.get('OPENAI_ORG') or os.environ.get('OPENAI.ORG')
+    BITO_CLI_KEY = os.environ.get('BITO_KEY') or os.environ.get('BITO.KEY')
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
     get_settings().set("CONFIG.PUBLISH_OUTPUT_PROGRESS", False)
 
@@ -27,15 +28,18 @@ async def run_action():
     if not GITHUB_EVENT_PATH:
         print("GITHUB_EVENT_PATH not set")
         return
-    if not OPENAI_KEY:
-        print("OPENAI_KEY not set")
+    if not OPENAI_KEY and not BITO_CLI_KEY:
+        print("OPENAI_KEY and BITO_CLI_KEY not set")
         return
     if not GITHUB_TOKEN:
         print("GITHUB_TOKEN not set")
         return
 
     # Set the environment variables in the settings
-    get_settings().set("OPENAI.KEY", OPENAI_KEY)
+    if OPENAI_KEY:
+        get_settings().set("OPENAI.KEY", OPENAI_KEY)
+    if BITO_CLI_KEY:
+        get_settings().set("BITO.KEY", BITO_CLI_KEY)
     if OPENAI_ORG:
         get_settings().set("OPENAI.ORG", OPENAI_ORG)
     get_settings().set("GITHUB.USER_TOKEN", GITHUB_TOKEN)

@@ -88,8 +88,6 @@ class AzureDevopsProvider:
                 changes_obj = self.azure_devops_client.get_changes(project=self.workspace_slug,
                                                                    repository_id=self.repo_slug, commit_id=c.commit_id)
                 for i in changes_obj.changes:
-                    if(i['item']['gitObjectType'] == 'tree'):
-                        continue
                     diffs.append(i['item']['path'])
                     diff_types[i['item']['path']] = i['changeType']
 
@@ -100,18 +98,14 @@ class AzureDevopsProvider:
                     continue
 
                 version = GitVersionDescriptor(version=head_sha.commit_id, version_type='commit')
-                try:
-                    new_file_content_str = self.azure_devops_client.get_item(repository_id=self.repo_slug,
-                                                                            path=file,
-                                                                            project=self.workspace_slug,
-                                                                            version_descriptor=version,
-                                                                            download=False,
-                                                                            include_content=True)
+                new_file_content_str = self.azure_devops_client.get_item(repository_id=self.repo_slug,
+                                                                         path=file,
+                                                                         project=self.workspace_slug,
+                                                                         version_descriptor=version,
+                                                                         download=False,
+                                                                         include_content=True)
 
-                    new_file_content_str = new_file_content_str.content
-                except Exception as error:
-                    logging.error("Failed to retrieve new file content of %s at version %s. Error: %s", file, version, str(error))
-                    new_file_content_str = ""
+                new_file_content_str = new_file_content_str.content
 
                 edit_type = EDIT_TYPE.MODIFIED
                 if diff_types[file] == 'add':
@@ -122,17 +116,13 @@ class AzureDevopsProvider:
                     edit_type = EDIT_TYPE.RENAMED
 
                 version = GitVersionDescriptor(version=base_sha.commit_id, version_type='commit')
-                try:
-                    original_file_content_str = self.azure_devops_client.get_item(repository_id=self.repo_slug,
+                original_file_content_str = self.azure_devops_client.get_item(repository_id=self.repo_slug,
                                                                               path=file,
                                                                               project=self.workspace_slug,
                                                                               version_descriptor=version,
                                                                               download=False,
                                                                               include_content=True)
-                    original_file_content_str = original_file_content_str.content
-                except Exception as error:
-                    logging.error("Failed to retrieve original file content of %s at version %s. Error: %s", file, version, str(error))
-                    original_file_content_str = ""
+                original_file_content_str = original_file_content_str.content
 
                 patch = load_large_diff(file, new_file_content_str, original_file_content_str)
 

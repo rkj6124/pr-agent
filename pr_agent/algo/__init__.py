@@ -1,4 +1,6 @@
 MAX_TOKENS = {
+    'bito_basic': 12000,
+    'bito_advanced': 90000,
     'text-embedding-ada-002': 8000,
     'gpt-3.5-turbo': 4000,
     'gpt-3.5-turbo-0613': 4000,

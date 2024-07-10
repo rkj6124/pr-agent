@@ -35,9 +35,7 @@ The review should focus on new code added in the PR (lines starting with '+'), a
 {%- if extra_instructions %}
 
 Extra instructions from the user:
-'
 {{ extra_instructions }}
-'
 {% endif %}
 
 You must use the following YAML schema to format your answer:
@@ -131,7 +129,8 @@ PR Feedback:
   Security concerns:
     type: string
     description: >-
-      yes\\no question: does this PR code introduce possible vulnerabilities such as exposure of sensitive information (e.g., API keys, secrets, passwords), or security concerns like SQL injection, XSS, CSRF, and others ? If answered 'yes', explain your answer briefly.
+      yes\\no question: does this PR code introduce possible security concerns or
+      issues, like SQL injection, XSS, CSRF, and others ? If answered 'yes',explain your answer shortly
 {%- endif %}
 ```
 
@@ -151,9 +150,6 @@ PR Analysis:
     No
 {%- if require_focused %}
   Focused PR: no, because ...
-{%- endif %}
-{%- if require_estimate_effort_to_review %}
-  Estimated effort to review [1-5]: 3, because ...
 {%- endif %}
 PR Feedback:
   General PR suggestions: |-
@@ -197,9 +193,7 @@ Here are questions to better understand the PR. Use the answers to provide bette
 {{question_str|trim}}
 
 User answers:
-'
 {{answer_str|trim}}
-'
 ######
 {%- endif %}
 

@@ -1,4 +1,7 @@
 import logging
+import tempfile
+import asyncio
+import subprocess
 import os
 
 import litellm
@@ -8,7 +11,7 @@ from openai.error import APIError, RateLimitError, Timeout, TryAgain
 from retry import retry
 from pr_agent.config_loader import get_settings
 OPENAI_RETRIES = 5
-
+trying = 0
 
 class AiHandler:
     """
@@ -23,8 +26,12 @@ class AiHandler:
         Raises a ValueError if the OpenAI key is missing.
         """
         try:
-            openai.api_key = get_settings().openai.key
-            litellm.openai_key = get_settings().openai.key
+            bito_cli_key = get_settings().bito.key
+            if bito_cli_key:
+                print(f"bito cli key - {bito_cli_key}")
+            else:
+                openai.api_key = get_settings().openai.key
+                litellm.openai_key = get_settings().openai.key
             if get_settings().get("litellm.use_client"):
                 litellm_token = get_settings().get("litellm.LITELLM_TOKEN")
                 assert litellm_token, "LITELLM_TOKEN is required"
@@ -62,6 +69,12 @@ class AiHandler:
         Returns the deployment ID for the OpenAI API.
         """
         return get_settings().get("OPENAI.DEPLOYMENT_ID", None)
+    
+    @property
+    def bito_cli_key(self):
+        key = get_settings().get("BITO.KEY", None)
+        print(f"got call to get bito_cli_key : {key}")
+        return key
 
     @retry(exceptions=(APIError, Timeout, TryAgain, AttributeError, RateLimitError),
            tries=OPENAI_RETRIES, delay=2, backoff=2, jitter=(1, 3))
@@ -92,17 +105,53 @@ class AiHandler:
                     f"Generating completion with {model}"
                     f"{(' from deployment ' + deployment_id) if deployment_id else ''}"
                 )
-            response = await acompletion(
-                model=model,
-                deployment_id=deployment_id,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user}
-                ],
-                temperature=temperature,
-                azure=self.azure,
-                force_timeout=get_settings().config.ai_timeout
-            )
+            
+            bito_response = None
+            response = None
+            if model.startswith("bito"):
+                global trying
+                trying += 1
+                logging.info(f"trying {trying}/{OPENAI_RETRIES} to get AI prediction...")
+                model_type = model.replace("bito_", "").upper()
+                tmp = tempfile.NamedTemporaryFile(mode='w', delete=False) 
+                context_file = tmp.name
+
+                out = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
+                out_file = out.name
+
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as system_prompt:
+                    system_prompt.write(system)
+                    instruction_file = system_prompt.name
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as user_prompt:
+                    user_prompt.write(user)
+                    cmd_output_file = user_prompt.name
+                bito_cmd = f"bito -p '{instruction_file}' -c '{context_file} -k {self.bito_cli_key}'"
+                bito_cmd += f" -f '{cmd_output_file}'" # Pass user prompt in this file
+                bito_cmd += f" -m '{model_type}'"
+                bito_cmd += f" > {out_file}"
+                proc = await asyncio.create_subprocess_shell(
+                    bito_cmd, stdout=None, 
+                    stderr=subprocess.PIPE
+                )
+                _, stderr = await proc.communicate()
+                if stderr:
+                    logging.info(f"Error from bito cli: {stderr.decode('utf-8')}")
+                else:
+                    with open(out_file, 'r') as file:
+                        bito_response = file.read()    
+                # bito_response = stdout.decode('utf-8')
+            else:
+                response = await acompletion(
+                    model=model,
+                    deployment_id=deployment_id,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user}
+                    ],
+                    temperature=temperature,
+                    azure=self.azure,
+                    force_timeout=get_settings().config.ai_timeout
+                )
         except (APIError, Timeout, TryAgain) as e:
             logging.error("Error during OpenAI inference: ", e)
             raise
@@ -112,9 +161,14 @@ class AiHandler:
         except (Exception) as e:
             logging.error("Unknown error during OpenAI inference: ", e)
             raise TryAgain from e
-        if response is None or len(response["choices"]) == 0:
+        if bito_response is None and (response is None or len(response["choices"]) == 0):
+            logging.info("bito response is None in this try")
             raise TryAgain
-        resp = response["choices"][0]['message']['content']
-        finish_reason = response["choices"][0]["finish_reason"]
-        print(resp, finish_reason)
-        return resp, finish_reason
+        elif bito_response is not None:
+            print(bito_response)
+            return bito_response, "BITO"
+        else:
+            resp = response["choices"][0]['message']['content']
+            finish_reason = response["choices"][0]["finish_reason"]
+            print(resp, finish_reason)
+            return resp, finish_reason
