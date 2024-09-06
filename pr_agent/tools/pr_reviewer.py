@@ -120,6 +120,7 @@ class PRReviewer:
                     logging.info('Pushing inline code comments...')
                     self._publish_inline_code_comments()
         except Exception as e:
+            print(str(e))
             logging.exception(f"Failed to review PR: {e}")
 
     async def _prepare_prediction(self, model: str) -> None:
