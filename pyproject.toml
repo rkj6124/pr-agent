@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pr_agent"
-version = "0.0.1"
+version = "0.0.2"
 
 authors = [
   {name = "Itamar Friedman", email = "itamar.f@codium.ai"},
